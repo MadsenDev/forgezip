@@ -857,7 +857,7 @@ General, Compression, Cloud, Automation, Privacy.
 
 [ ] Allow export/import settings to JSON.
 
-[ ] Tailwind 3.4.14 for tabbed layout and forms.
+[x] Tailwind 3.4.14 for tabbed layout and forms.
 
 
 
