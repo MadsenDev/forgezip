@@ -874,21 +874,21 @@ contextIsolation: true.
 Preload only exposes safe, typed APIs.
 
 
-[ ] Password handling:
+[x] Password handling:
 
-No logging of passwords.
+[x] No logging of passwords.
 
-No cloud sync of secrets by default.
+[x] No cloud sync of secrets by default.
 
-Optional encrypted storage if “remember password” feature added.
-
-
-[ ] EXIF stripping:
-
-Add optional toggles & implement via EXIF-removal lib (e.g., exiftool wrapper).
+[x] Optional encrypted storage if “remember password” feature added.
 
 
-[ ] “Privacy mode” toggle in settings:
+[x] EXIF stripping:
+
+[x] Add optional toggles & implement via EXIF-removal lib (e.g., exiftool wrapper).
+
+
+[x] “Privacy mode” toggle in settings:
 
 Turns off telemetry/logging beyond essentials.
 
