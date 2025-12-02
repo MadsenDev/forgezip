@@ -7,6 +7,7 @@ interface PrivacyStore extends PrivacySettings {
   setStripMetadata: (enabled: boolean) => void
   togglePrivacyMode: () => void
   toggleRememberSecrets: () => void
+  hydrate: (settings: Partial<PrivacySettings & { rememberSecrets: boolean }>) => void
 }
 
 export const usePrivacyStore = create<PrivacyStore>((set) => ({
@@ -18,4 +19,11 @@ export const usePrivacyStore = create<PrivacyStore>((set) => ({
   setStripMetadata: (enabled) => set({ stripMetadata: enabled }),
   togglePrivacyMode: () => set((state) => ({ privacyMode: !state.privacyMode })),
   toggleRememberSecrets: () => set((state) => ({ rememberSecrets: !state.rememberSecrets })),
+  hydrate: (settings) =>
+    set((state) => ({
+      privacyMode: settings.privacyMode ?? state.privacyMode,
+      stripMetadata: settings.stripMetadata ?? state.stripMetadata,
+      telemetryLevel: settings.telemetryLevel ?? state.telemetryLevel,
+      rememberSecrets: settings.rememberSecrets ?? state.rememberSecrets,
+    })),
 }))

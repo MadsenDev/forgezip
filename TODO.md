@@ -899,7 +899,7 @@ Turns off telemetry/logging beyond essentials.
 
 16. Testing & QA
 
-[ ] Install test libs if needed (Vitest, etc.).
+[x] Install test libs if needed (Vitest, etc.).
 
 [ ] Unit tests:
 
@@ -910,6 +910,7 @@ Smart profile rules.
 Automation triggers.
 
 Analytics calculations.
+  - Baseline coverage added for privacy helpers and the encrypted vault.
 
 
 [ ] E2E tests (Playwright/Cypress):
@@ -936,14 +937,12 @@ Context menu integration on Windows.
 
 17. Packaging, Auto-Update, Release
 
-[ ] Finalize electron-builder config:
+[x] Finalize electron-builder config:
 
-AppId, icons, targets.
-
-File associations confirmed.
+AppId, icons, targets refreshed with archive file associations.
 
 
-[ ] Auto-update:
+[x] Auto-update:
 
 Use GitHub Releases or simple update server.
 
@@ -963,7 +962,7 @@ On tag: build Windows/macOS/Linux installers.
 
 18. Docs & Onboarding
 
-[ ] Create docs/:
+[x] Create docs/:
 
 Getting started.
 
@@ -974,9 +973,9 @@ Automation guide.
 Plugin development guide.
 
 
-[ ] In-app onboarding:
+[x] In-app onboarding:
 
 One-time tour: New Archive, Automation, Workspace, Cloud upload.
 
 
-[ ] “What’s New” dialog for releases (reads from changelog).
+[x] “What’s New” dialog for releases (reads from changelog).

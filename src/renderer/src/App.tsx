@@ -2,20 +2,24 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { create } from 'zustand'
-import { buildPrivacySummary, redactPayload } from '@core/security/privacy'
+import { buildPrivacySummary, redactPayload, type PrivacySettings } from '@core/security/privacy'
 import { usePrivacyStore } from './state/privacy'
 import {
   FiArchive,
+  FiBookOpen,
   FiCheckCircle,
   FiCloud,
   FiCpu,
   FiDatabase,
+  FiDownload,
+  FiInfo,
   FiFolder,
   FiLock,
   FiPlayCircle,
   FiSettings,
   FiShield,
   FiSliders,
+  FiUpload,
   FiZap,
 } from 'react-icons/fi'
 
@@ -70,6 +74,7 @@ function App() {
     setStripMetadata,
     toggleRememberSecrets,
     setTelemetryLevel,
+    hydrate: hydratePrivacy,
   } = usePrivacyStore()
   const { data: capabilities = [] } = useCompressionCapabilities()
   const [lastMessage, setLastMessage] = useState<string | null>(null)
@@ -82,11 +87,55 @@ function App() {
   const [automationDestination, setAutomationDestination] = useState('Google Drive')
   const [automationCadence, setAutomationCadence] = useState('Nightly')
   const [automationEncrypted, setAutomationEncrypted] = useState(true)
+  const [settingsStatus, setSettingsStatus] = useState('Ready to sync settings')
+  const [exportLocation, setExportLocation] = useState<string | null>(null)
   const tabs = useMemo(
     () => [
       { id: 'archive' as const, label: 'Archive plan', hint: 'Create + harden outputs', icon: <FiArchive /> },
       { id: 'automation' as const, label: 'Automation', hint: 'Profiles & cadence', icon: <FiPlayCircle /> },
       { id: 'privacy' as const, label: 'Privacy', hint: 'EXIF + telemetry', icon: <FiShield /> },
+    ],
+    [],
+  )
+
+  const onboardingSteps = useMemo(
+    () => [
+      {
+        title: 'Create your first archive plan',
+        detail: 'Bind the Archive tab to src/core/compression and src/core/cloud.',
+        complete: false,
+      },
+      {
+        title: 'Wire automation triggers',
+        detail: 'Use chokidar in src/core/workspace to schedule runs.',
+        complete: false,
+      },
+      {
+        title: 'Encrypt tokens in the vault',
+        detail: 'Use Remember secrets + src/core/security/vault.ts to persist credentials.',
+        complete: true,
+      },
+    ],
+    [],
+  )
+
+  const whatsNewItems = useMemo(
+    () => [
+      {
+        version: '0.1.0',
+        highlight: 'Auto-update channel',
+        detail: 'File → Check for updates now uses electron-updater targeting GitHub releases.',
+      },
+      {
+        version: '0.1.0',
+        highlight: 'Testing baseline',
+        detail: 'Vitest covers privacy helpers and the encrypted vault to guard regressions.',
+      },
+      {
+        version: '0.1.0',
+        highlight: 'Docs drop',
+        detail: 'New guides live in /docs for onboarding, automation, and plugin authors.',
+      },
     ],
     [],
   )
@@ -100,6 +149,19 @@ function App() {
 
     return () => cleanup?.()
   }, [])
+
+  useEffect(() => {
+    if (!window.electronAPI) return
+    window.electronAPI
+      .invoke('settings:load')
+      .then((saved) => {
+        if (saved) {
+          hydratePrivacy(saved as Partial<PrivacySettings & { rememberSecrets: boolean }>)
+          setSettingsStatus('Settings loaded from disk')
+        }
+      })
+      .catch(() => setSettingsStatus('Unable to load settings'))
+  }, [hydratePrivacy])
 
   const automationSummary = useMemo(
     () => ({
@@ -123,6 +185,80 @@ function App() {
       }),
     [],
   )
+
+  const currentSettings = useMemo(
+    () => ({ privacyMode, stripMetadata, telemetryLevel, rememberSecrets }),
+    [privacyMode, rememberSecrets, stripMetadata, telemetryLevel],
+  )
+
+  const persistSettings = async () => {
+    if (!window.electronAPI) {
+      setSettingsStatus('Settings sync requires the Electron runtime')
+      return
+    }
+
+    try {
+      await window.electronAPI.invoke('settings:save', currentSettings)
+      setSettingsStatus('Settings saved to profile')
+    } catch (error) {
+      console.error(error)
+      setSettingsStatus('Unable to save settings')
+    }
+  }
+
+  const exportSettings = async () => {
+    if (!window.electronAPI) {
+      setSettingsStatus('Export requires the Electron runtime')
+      return
+    }
+
+    try {
+      const result = await window.electronAPI.invoke<{ canceled?: boolean; filePath?: string }>('settings:export')
+      if (result?.canceled) {
+        setSettingsStatus('Export canceled')
+        return
+      }
+
+      setExportLocation(result?.filePath ?? null)
+      setSettingsStatus('Settings exported')
+    } catch (error) {
+      console.error(error)
+      setSettingsStatus('Export failed')
+    }
+  }
+
+  const importSettings = async () => {
+    if (!window.electronAPI) {
+      setSettingsStatus('Import requires the Electron runtime')
+      return
+    }
+
+    try {
+      const result = await window.electronAPI.invoke<{
+        canceled?: boolean
+        error?: string
+        settings?: Partial<PrivacySettings & { rememberSecrets: boolean }>
+      }>('settings:import')
+
+      if (result?.canceled) {
+        setSettingsStatus('Import canceled')
+        return
+      }
+
+      if (result?.error) {
+        setSettingsStatus(result.error)
+        return
+      }
+
+      if (result?.settings) {
+        hydratePrivacy(result.settings)
+      }
+      setSettingsStatus('Settings imported and applied')
+    } catch (error) {
+      console.error(error)
+      setSettingsStatus('Import failed')
+    }
+  }
 
   const renderTabPanel = () => {
     if (activeTab === 'archive') {
@@ -441,6 +577,41 @@ function App() {
 
         <div className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-white/10">
           <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-white">Settings backup</h4>
+            <FiDatabase className="text-indigo-300" />
+          </div>
+          <p className="text-xs text-slate-400">Export or import JSON to move your privacy profile between devices.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={persistSettings}
+              className="flex items-center justify-center gap-2 rounded-lg border border-emerald-400/50 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-100 transition hover:border-emerald-300"
+            >
+              <FiCpu /> Save profile
+            </button>
+            <button
+              type="button"
+              onClick={exportSettings}
+              className="flex items-center justify-center gap-2 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-3 py-2 text-sm font-semibold text-indigo-100 transition hover:border-indigo-300"
+            >
+              <FiDownload /> Export JSON
+            </button>
+            <button
+              type="button"
+              onClick={importSettings}
+              className="flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:border-white/30 sm:col-span-2"
+            >
+              <FiUpload /> Import JSON
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            {settingsStatus}
+            {exportLocation && ` • Saved to ${exportLocation}`}
+          </p>
+        </div>
+
+        <div className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-white/10">
+          <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-white">Safeguards</h4>
             <FiLock className="text-emerald-300" />
           </div>
@@ -487,10 +658,11 @@ function App() {
         <header className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-indigo-600/20 via-slate-900 to-slate-950 p-8 shadow-xl ring-1 ring-white/5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-indigo-300/80">Compression Forge</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-indigo-300/80">ForgeZip</p>
               <h1 className="text-3xl font-semibold text-white sm:text-4xl">Archive automation without the guesswork.</h1>
               <p className="mt-3 max-w-2xl text-slate-300">
-                Electron + React + Tailwind scaffold with opinionated structure for compression, automation, and cloud sync.
+                ForgeZip ships as an Electron + React + Tailwind scaffold with opinionated structure for compression, automation,
+                and cloud sync.
                 Start extending the core folders to wire up real engines, watchers, and analytics.
               </p>
             </div>
@@ -640,6 +812,61 @@ function App() {
                 </li>
               ))}
             </ul>
+          </motion.div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <motion.div className="rounded-2xl bg-slate-900/80 p-6 ring-1 ring-white/10" {...cardHover}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.25em] text-indigo-200">Onboarding</p>
+                <h3 className="text-2xl font-semibold text-white">First-run checklist</h3>
+              </div>
+              <FiBookOpen className="text-amber-300" size={28} />
+            </div>
+            <p className="mt-2 text-sm text-slate-300">
+              Work through these steps to connect the renderer to core services and automation entrypoints.
+            </p>
+            <ul className="mt-4 space-y-3 text-sm text-slate-200">
+              {onboardingSteps.map((step) => (
+                <li key={step.title} className="flex items-start gap-3 rounded-lg bg-white/5 px-3 py-2">
+                  <span
+                    className={`mt-1.5 inline-block h-3 w-3 rounded-full ${
+                      step.complete ? 'bg-emerald-300' : 'border border-slate-400'
+                    }`}
+                  />
+                  <div>
+                    <p className="font-semibold text-white">{step.title}</p>
+                    <p className="text-xs text-slate-400">{step.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+
+          <motion.div className="rounded-2xl bg-slate-900/80 p-6 ring-1 ring-white/10" {...cardHover}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.25em] text-indigo-200">Release highlights</p>
+                <h3 className="text-2xl font-semibold text-white">What&apos;s new</h3>
+              </div>
+              <FiInfo className="text-sky-300" size={28} />
+            </div>
+            <p className="mt-2 text-sm text-slate-300">Recent updates piped into the File → Check for updates menu.</p>
+            <ul className="mt-4 space-y-3 text-sm text-slate-200">
+              {whatsNewItems.map((item) => (
+                <li key={item.highlight} className="rounded-lg bg-white/5 px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-white">{item.highlight}</p>
+                    <span className="rounded-full bg-indigo-500/20 px-2 py-1 text-[11px] font-semibold text-indigo-200">
+                      v{item.version}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">{item.detail}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-slate-400">See docs/whats-new.md for the full changelog feed.</p>
           </motion.div>
         </section>
 

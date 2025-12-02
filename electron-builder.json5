@@ -1,19 +1,44 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "com.forgezip.desktop",
   "asar": true,
-  "productName": "YourAppName",
+  "productName": "ForgeZip",
   "directories": {
-    "output": "release/${version}"
+    "output": "release/${version}",
+    "buildResources": "build"
   },
   "files": [
     "dist",
     "dist-electron"
   ],
+  "fileAssociations": [
+    {
+      "ext": ["zip", "7z", "tar", "gz"],
+      "name": "ForgeZip Archive",
+      "description": "Archives handled by ForgeZip",
+      "role": "Editor"
+    }
+  ],
+  "protocols": [
+    {
+      "name": "ForgeZip Automation",
+      "schemes": ["forgezip"],
+      "role": "Viewer"
+    }
+  ],
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "forgezip",
+      "repo": "forgezip"
+    }
+  ],
   "mac": {
+    "category": "public.app-category.utilities",
     "target": [
-      "dmg"
+      "dmg",
+      "zip"
     ],
     "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
   },
@@ -24,7 +49,8 @@
         "arch": [
           "x64"
         ]
-      }
+      },
+      "portable"
     ],
     "artifactName": "${productName}-Windows-${version}-Setup.${ext}"
   },
@@ -35,8 +61,10 @@
     "deleteAppDataOnUninstall": false
   },
   "linux": {
+    "category": "Utility",
     "target": [
-      "AppImage"
+      "AppImage",
+      "deb"
     ],
     "artifactName": "${productName}-Linux-${version}.${ext}"
   }

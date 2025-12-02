@@ -19,6 +19,15 @@ export default defineConfig({
     outDir: path.join(__dirname, 'dist'),
     emptyOutDir: true,
   },
+  test: {
+    environment: 'node',
+    globals: true,
+    root: __dirname,
+    include: ['src/**/*.test.ts'],
+    env: {
+      NODE_ENV: 'test',
+    },
+  },
   plugins: [
     react(),
     electron({
