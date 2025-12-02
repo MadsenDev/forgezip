@@ -53,42 +53,42 @@ Plugins: local folder-based plugins with plugin.json manifest + Node module entr
 
 1. Bootstrap the Repo
 
-[ ] Install pnpm globally if needed.
+[x] Install pnpm globally if needed.
 
-[ ] Create Electron + React + TS + Vite base:
+[x] Create Electron + React + TS + Vite base at the repo root (no nested `compression-forge/` folder).
 
-[ ] Run:
+[x] Run:
 pnpm create electron-vite@latest compression-forge --template react-ts
 
 
-[ ] cd compression-forge
+[x] Move the scaffold to the repository root.
 
-[ ] Initialize git repo; add .gitignore.
+[x] Initialize git repo; add .gitignore.
 
 
 Install UI deps (with Tailwind pinned to v3.4.x):
 
-[ ] pnpm add zustand @tanstack/react-query framer-motion react-icons recharts
+[x] pnpm add zustand @tanstack/react-query framer-motion react-icons recharts
 
-[ ] pnpm add -D tailwindcss@3.4.14 postcss autoprefixer
+[x] pnpm add -D tailwindcss@3.4.14 postcss autoprefixer
 
 
 Tailwind setup (ensure it stays on 3.4.14, do not upgrade to 4.x):
 
-[ ] Run: npx tailwindcss@3.4.14 init -p
+[x] Run: npx tailwindcss@3.4.14 init -p
 
-[ ] Configure tailwind.config.cjs (or .js) to scan:
+[x] Configure tailwind.config.cjs (or .js) to scan:
 
-[ ] ./src/renderer/src/**/*.{js,ts,jsx,tsx,html}
+[x] ./src/renderer/src/**/*.{js,ts,jsx,tsx,html}
 
 
-[ ] In src/renderer/src/index.css (or equivalent), add:
+[x] In src/renderer/src/index.css (or equivalent), add:
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-[ ] Optionally set up path aliases in tsconfig.* (e.g. @/components, @/core).
+[x] Optionally set up path aliases in tsconfig.* (e.g. @/components, @/core).
 
 
 
@@ -96,34 +96,34 @@ Tailwind setup (ensure it stays on 3.4.14, do not upgrade to 4.x):
 
 2. Project Structure & Separation
 
-[ ] Ensure standard electron-vite structure:
+[x] Ensure standard electron-vite structure:
 
-[ ] src/main → Electron main process
+[x] src/main → Electron main process
 
-[ ] src/preload → preload + contextBridge
+[x] src/preload → preload + contextBridge
 
-[ ] src/renderer → React UI
+[x] src/renderer → React UI
 
 
-[ ] Create backend “core” folder for Node logic:
+[x] Create backend “core” folder for Node logic:
 
-[ ] src/core/compression/
+[x] src/core/compression/
 
-[ ] src/core/cloud/
+[x] src/core/cloud/
 
-[ ] src/core/analytics/
+[x] src/core/analytics/
 
-[ ] src/core/automation/
+[x] src/core/automation/
 
-[ ] src/core/plugins/
+[x] src/core/plugins/
 
-[ ] src/core/db/
+[x] src/core/db/
 
-[ ] src/core/workspace/
+[x] src/core/workspace/
 
-[ ] src/core/jobs/
+[x] src/core/jobs/
 
-[ ] src/core/smartProfiles/
+[x] src/core/smartProfiles/
 
 
 
@@ -865,7 +865,7 @@ General, Compression, Cloud, Automation, Privacy.
 
 15. Security & Privacy
 
-[ ] Ensure:
+[x] Ensure:
 
 nodeIntegration: false in BrowserWindow.
 
