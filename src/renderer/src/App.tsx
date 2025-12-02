@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { create } from 'zustand'
+import { buildPrivacySummary, redactPayload } from '@core/security/privacy'
+import { usePrivacyStore } from './state/privacy'
 import {
   FiArchive,
   FiCheckCircle,
@@ -25,23 +27,19 @@ interface AutomationProfile {
 }
 
 interface WorkspaceState {
-  privacyMode: boolean
   profiles: AutomationProfile[]
   queuedTasks: string[]
-  togglePrivacyMode: () => void
 }
 
 type TabKey = 'archive' | 'automation' | 'privacy'
 
-const useWorkspaceStore = create<WorkspaceState>((set) => ({
-  privacyMode: false,
+const useWorkspaceStore = create<WorkspaceState>(() => ({
   profiles: [
     { name: 'Project backups', target: 'Local workspace', enabled: true, cadence: 'Nightly' },
     { name: 'Client delivery', target: 'Google Drive', enabled: true, cadence: 'On demand' },
     { name: 'Media cleanup', target: 'Dropbox', enabled: false, cadence: 'Weekly' },
   ],
   queuedTasks: ['Encrypt & zip assets', 'Watch downloads folder', 'Sync changelog with Drive'],
-  togglePrivacyMode: () => set((state) => ({ privacyMode: !state.privacyMode })),
 }))
 
 function useCompressionCapabilities() {
@@ -62,7 +60,17 @@ const cardHover = {
 }
 
 function App() {
-  const { privacyMode, profiles, queuedTasks, togglePrivacyMode } = useWorkspaceStore()
+  const { profiles, queuedTasks } = useWorkspaceStore()
+  const {
+    privacyMode,
+    stripMetadata,
+    telemetryLevel,
+    rememberSecrets,
+    togglePrivacyMode,
+    setStripMetadata,
+    toggleRememberSecrets,
+    setTelemetryLevel,
+  } = usePrivacyStore()
   const { data: capabilities = [] } = useCompressionCapabilities()
   const [lastMessage, setLastMessage] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('archive')
@@ -70,13 +78,10 @@ function App() {
   const [archiveFormat, setArchiveFormat] = useState('7z')
   const [sourceFolder, setSourceFolder] = useState('~/Downloads/drops')
   const [compressionLevel, setCompressionLevel] = useState(7)
-  const [stripMetadata, setStripMetadata] = useState(true)
   const [includeChecksum, setIncludeChecksum] = useState(true)
   const [automationDestination, setAutomationDestination] = useState('Google Drive')
   const [automationCadence, setAutomationCadence] = useState('Nightly')
   const [automationEncrypted, setAutomationEncrypted] = useState(true)
-  const [rememberSecrets, setRememberSecrets] = useState(false)
-  const [telemetryLevel, setTelemetryLevel] = useState<'minimal' | 'full'>('minimal')
   const tabs = useMemo(
     () => [
       { id: 'archive' as const, label: 'Archive plan', hint: 'Create + harden outputs', icon: <FiArchive /> },
@@ -102,6 +107,21 @@ function App() {
       total: profiles.length,
     }),
     [profiles],
+  )
+
+  const privacySummary = useMemo(
+    () => buildPrivacySummary({ privacyMode, stripMetadata, telemetryLevel }),
+    [privacyMode, stripMetadata, telemetryLevel],
+  )
+
+  const sanitizedSecrets = useMemo(
+    () =>
+      redactPayload({
+        token: 'gdrive-secret-token-abc123',
+        password: 'super-secret-password',
+        bucket: 'forgezip-private',
+      }),
+    [],
   )
 
   const renderTabPanel = () => {
@@ -218,7 +238,8 @@ function App() {
                 <span>{stripMetadata ? 'EXIF stripped for uploads' : 'Keep original metadata'}</span>
               </div>
               <p className="text-xs text-slate-400">
-                Next step: bind this plan to <code className="rounded bg-white/10 px-1">src/core/compression</code> and
+                Next step: bind this plan to <code className="rounded bg-white/10 px-1">src/core/compression</code>,
+                <code className="rounded bg-white/10 px-1">src/core/compression/exif.ts</code>, and
                 <code className="rounded bg-white/10 px-1">src/core/cloud</code> to execute.
               </p>
             </div>
@@ -284,7 +305,7 @@ function App() {
                   type="checkbox"
                   className="h-4 w-4 accent-emerald-400"
                   checked={rememberSecrets}
-                  onChange={(event) => setRememberSecrets(event.target.checked)}
+                  onChange={toggleRememberSecrets}
                 />
               </label>
             </div>
@@ -396,6 +417,21 @@ function App() {
                 </button>
               ))}
             </div>
+            <div className="grid gap-2 rounded-lg border border-white/10 bg-slate-900/70 p-3 text-xs text-slate-300">
+              <div className="flex items-center justify-between text-sm text-white">
+                <span>{privacySummary.modeLabel}</span>
+                <span className="text-emerald-200">{privacySummary.telemetryAllowed ? 'Telemetry on' : 'Telemetry limited'}</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Secrets are redacted before logging or IPC dispatch. Example payload:
+              </p>
+              <code className="block rounded-md bg-slate-800/80 p-2 text-[11px] text-emerald-100">
+                {JSON.stringify(sanitizedSecrets)}
+              </code>
+              <p className="text-[11px] text-slate-400">
+                Strip metadata: {privacySummary.strippingMetadata ? 'enabled for exports' : 'disabled'}
+              </p>
+            </div>
             <p className="text-xs text-slate-400">
               Route settings through <code className="rounded bg-white/10 px-1">src/core/analytics</code> and <code className="rounded bg-white/10 px-1">src/core/cloud</code>
               to ensure secrets stay local unless a user opts in.
@@ -425,14 +461,19 @@ function App() {
               <FiCheckCircle className="mt-0.5 text-emerald-300" />
               <span>Telemetry level: {telemetryLevel}</span>
             </li>
+            <li className="flex items-start gap-2 rounded-lg bg-white/5 px-3 py-2">
+              <FiCheckCircle className="mt-0.5 text-emerald-300" />
+              <span>Secrets redacted in logs; encrypted vault only when "Remember" is on</span>
+            </li>
           </ul>
           <div className="rounded-lg bg-slate-900/80 px-3 py-3 text-xs text-slate-300">
             <p className="flex items-center gap-2 font-semibold text-slate-100">
               <FiLock className="text-emerald-300" /> Secure storage note
             </p>
             <p>
-              When <span className="font-semibold text-white">Remember secrets</span> is enabled, persist tokens with
-              better-sqlite3 and OS keychain integration. Otherwise, request credentials per run.
+              When <span className="font-semibold text-white">Remember secrets</span> is enabled, persist tokens with the
+              encrypted vault in <code className="rounded bg-white/10 px-1">src/core/security/vault.ts</code> (no plain-text
+              logging). Otherwise, request credentials per run.
             </p>
           </div>
         </div>
