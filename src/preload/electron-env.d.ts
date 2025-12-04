@@ -22,6 +22,8 @@ declare namespace NodeJS {
   }
 }
 
+import type { ForgeZipAPI } from '@shared/archive'
+
 type PreloadElectronAPI = {
   on: (
     channel: string,
@@ -39,6 +41,7 @@ type PreloadElectronAPI = {
 declare global {
   interface Window {
     electronAPI?: PreloadElectronAPI
+    forgezip?: ForgeZipAPI
   }
 }
 

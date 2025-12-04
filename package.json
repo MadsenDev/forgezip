@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "electron:dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "test": "NODE_ENV=test vitest run",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "7zip-bin": "^5.2.0",
     "@tanstack/react-query": "^5.90.11",
     "electron-updater": "^6.6.2",
     "exiftool-vendored": "^33.5.0",
@@ -42,5 +44,5 @@
     "vite-plugin-electron-renderer": "^0.14.5",
     "vitest": "^4.0.15"
   },
-  "main": "dist-electron/main.js"
+  "main": "dist-electron/index.js"
 }

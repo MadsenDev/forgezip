@@ -9,6 +9,7 @@ import {
   readSettings,
   writeSettings,
 } from '@core/workspace/settings'
+import { registerArchiveIpcHandlers } from './archive'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -183,6 +184,7 @@ app.whenReady().then(() => {
   settingsPath = resolveSettingsPath(app.getPath('userData'))
   writeSettings(settingsPath, readSettings(settingsPath))
   registerSettingsIpc()
+  registerArchiveIpcHandlers()
   buildMenu()
   createWindow()
 

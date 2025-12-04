@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { forgezipAPI } from './api'
 
 type IpcHandler = (event: IpcRendererEvent, ...args: unknown[]) => void
 
@@ -20,3 +21,4 @@ const electronAPI: ElectronAPI = {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)
+contextBridge.exposeInMainWorld('forgezip', forgezipAPI)

@@ -12,6 +12,10 @@ ForgeZip is an Electron desktop app scaffolded with React, TypeScript, Vite, and
    ```bash
    pnpm dev
    ```
+   Or use the explicit Electron shortcut:
+   ```bash
+   pnpm electron:dev
+   ```
 4. Run tests:
    ```bash
    pnpm test
@@ -19,6 +23,7 @@ ForgeZip is an Electron desktop app scaffolded with React, TypeScript, Vite, and
 
 ## Scripts
 - `pnpm dev` – Run the Electron + Vite dev server.
+- `pnpm electron:dev` – Same as `pnpm dev`, provided for muscle-memory parity with Electron starters.
 - `pnpm lint` – Lint the project. (Currently surfaces the upstream @typescript-eslint notice about TypeScript 5.9.)
 - `pnpm test` – Execute Vitest unit tests for core utilities.
 

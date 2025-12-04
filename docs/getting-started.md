@@ -15,6 +15,10 @@ ForgeZip ships as an Electron + React starter focused on archive automation. Use
    ```bash
    pnpm dev
    ```
+   Or run the explicit Electron alias:
+   ```bash
+   pnpm electron:dev
+   ```
 3. Lint and type-check:
    ```bash
    pnpm lint
